@@ -14,7 +14,7 @@ st.set_page_config(
 
 import pandas as pd
 from datetime import datetime
-from dashboard.style.theme import GLOBAL_CSS
+from dashboard.style.theme import GLOBAL_CSS, RISK
 
 st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
@@ -114,60 +114,72 @@ def load_iris_system():
 # ─────────────────────────────────────────────────────────────────────────────
 def render_sidebar(iris: dict) -> str:
     with st.sidebar:
-        # Logo
-        st.markdown(f"""
-        <div style='text-align:center; padding:1rem 0;'>
-            <div style='font-size:2rem;'>🇰🇪</div>
-            <div style='font-size:1.1rem; font-weight:bold; color:#C5A028;'>IRIS</div>
-            <div style='font-size:0.72rem; color:#AAAAAA;'>Intelligent Risk Integration System</div>
-            <div style='font-size:0.62rem; color:#888888;'>v{APP_VERSION}</div>
-        </div>
-        """, unsafe_allow_html=True)
-
-        st.markdown("---")
-
-        # IRIS Score badge
-        score  = iris["iris_score"]["iris_score"]
-        emoji  = iris["classification"]["regime_emoji"]
-        regime = iris["classification"]["regime"]
-        colour = iris["iris_score"]["regime_colour"]
-
-        st.markdown(f"""
-        <div style='text-align:center; background:{colour}22; border:2px solid {colour};
-                    border-radius:10px; padding:1rem; margin:0.5rem 0;'>
-            <div style='font-size:2.4rem; font-weight:bold; color:{colour};'>{score:.0f}</div>
-            <div style='font-size:0.82rem; color:{colour}; font-weight:bold;'>
-                {emoji} {regime}
+        # ── Brand mark ────────────────────────────────────────────────────────
+        st.markdown("""
+        <div style="padding:1.25rem 0 0.5rem; text-align:center;">
+            <div style="font-size:1.8rem; line-height:1;">🇰🇪</div>
+            <div style="font-size:1rem; font-weight:700; color:#F1F5F9;
+                        margin-top:0.3rem; letter-spacing:0.05em;">IRIS</div>
+            <div style="font-size:0.7rem; color:#64748B; margin-top:0.1rem;">
+                Intelligent Risk Integration System
             </div>
-            <div style='font-size:0.65rem; color:#888;'>IRIS Risk Score / 100</div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Alert badge
+        st.markdown('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin:0.5rem 0">', unsafe_allow_html=True)
+
+        # ── IRIS Score ────────────────────────────────────────────────────────
+        score  = iris["iris_score"]["iris_score"]
+        regime = iris["classification"]["regime"]
+        r      = RISK.get(regime, RISK["MODERATE"])
+
+        # Score block — dark bg so coloured text is readable
+        score_text_col = {
+            "STABLE": "#4ADE80", "MODERATE": "#FCD34D",
+            "DANGER": "#FB923C", "CRITICAL": "#F87171",
+        }.get(regime, "#FCD34D")
+
+        st.markdown(f"""
+        <div style="margin:0.5rem 0 0.75rem; padding:0.9rem 0.75rem;
+                    background:rgba(255,255,255,0.04);
+                    border:1px solid rgba(255,255,255,0.08);
+                    border-radius:10px; text-align:center;">
+            <div style="font-size:2.4rem; font-weight:700; color:{score_text_col};
+                        line-height:1; letter-spacing:-0.03em;">
+                {score:.0f}
+            </div>
+            <div style="font-size:0.7rem; color:#64748B; margin:0.15rem 0 0.4rem;">
+                / 100 · risk score
+            </div>
+            <div style="font-size:0.85rem; font-weight:600; color:{score_text_col};">
+                {r['emoji']} {regime}
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+        # ── Alert badge ───────────────────────────────────────────────────────
         alert_sum = iris.get("alert_summary", {})
         n_crit    = alert_sum.get("critical_count", 0)
         n_alert   = alert_sum.get("alert_count",    0)
         n_unread  = alert_sum.get("unread_count",   0)
         if n_unread > 0:
-            badge_col = "#8B0000" if n_crit > 0 else "#E65100"
+            a_col = "#F87171" if n_crit > 0 else "#FB923C"
             st.markdown(f"""
-            <div style='background:{badge_col}18; border:1px solid {badge_col};
-                        border-radius:6px; padding:0.4rem 0.8rem; margin:0.3rem 0;
-                        text-align:center; font-size:0.75rem; color:{badge_col};
-                        font-weight:bold;'>
-                🔔 {n_unread} unread alert(s) ·
-                {n_crit} critical · {n_alert} alerts
+            <div style="background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.25);
+                        border-radius:8px; padding:0.4rem 0.75rem; margin-bottom:0.5rem;
+                        font-size:0.75rem; color:{a_col}; font-weight:500; text-align:center;">
+                🔔 {n_unread} alert{"s" if n_unread > 1 else ""}
+                &nbsp;·&nbsp; {n_crit} critical &nbsp;·&nbsp; {n_alert} alerts
             </div>
             """, unsafe_allow_html=True)
 
-        st.markdown("---")
+        st.markdown('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin:0.25rem 0 0.5rem">', unsafe_allow_html=True)
 
-        # Navigation
-        st.markdown(
-            "<div style='font-size:0.78rem; color:#C5A028; font-weight:bold; "
-            "letter-spacing:1px;'>NAVIGATION</div>",
-            unsafe_allow_html=True,
-        )
+        # ── Navigation ────────────────────────────────────────────────────────
+        st.markdown('<p style="font-size:0.68rem; color:#475569; font-weight:600; '
+                    'text-transform:uppercase; letter-spacing:0.08em; '
+                    'margin:0 0 0.3rem; padding:0 0.1rem;">Navigation</p>',
+                    unsafe_allow_html=True)
 
         page = st.radio(
             label="",
@@ -186,24 +198,27 @@ def render_sidebar(iris: dict) -> str:
             label_visibility="collapsed",
         )
 
-        st.markdown("---")
+        st.markdown('<hr style="border:none;border-top:1px solid rgba(255,255,255,0.07);margin:0.5rem 0">', unsafe_allow_html=True)
 
-        # Data status
+        # ── Status ────────────────────────────────────────────────────────────
         live_ok   = iris.get("live_available", False)
-        cache_age = get_cache_age_minutes()
         loaded_at = iris.get("loaded_at", datetime.now())
+        models_ok = iris["model_results"].get("models_ok", "?")
+        models_n  = iris["model_results"].get("models_total", "?")
+
+        status_dot  = "🟢" if live_ok else "🟡"
+        status_text = "Live data" if live_ok else "Historical data"
 
         st.markdown(f"""
-        <div style='font-size:0.72rem; color:#AAAAAA;'>
-            <div>{'🟢 Live data' if live_ok else '🟡 Historical data'}</div>
-            <div>Last run: {loaded_at.strftime('%H:%M:%S')}</div>
-            {'<div>Cache age: ' + str(cache_age) + ' min</div>' if cache_age else ''}
-            <div>Models: {iris["model_results"].get("models_ok","?")}/{iris["model_results"].get("models_total","?")} OK</div>
+        <div style="font-size:0.73rem; color:#475569; line-height:1.8;">
+            <div>{status_dot} {status_text}</div>
+            <div>Updated {loaded_at.strftime('%H:%M:%S')}</div>
+            <div>Models: {models_ok}/{models_n} passing</div>
         </div>
         """, unsafe_allow_html=True)
 
-        st.markdown("")
-        if st.button("🔄 Refresh Data", use_container_width=True):
+        st.markdown('<div style="margin-top:0.6rem;"></div>', unsafe_allow_html=True)
+        if st.button("↺ Refresh", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
 
